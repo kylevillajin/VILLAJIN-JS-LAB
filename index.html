@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BMI Calculator</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at 30% 20%, #2b1055, #0a0a1a 70%);
+    color: #fff;
+  }
+
+  #card {
+    width: 340px;
+    padding: 2.2rem;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  h1 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 0 0 1.5rem;
+    letter-spacing: 0.5px;
+    background: linear-gradient(90deg, #a18cd1, #fbc2eb);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .field {
+    margin-bottom: 1rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 0.4rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    transition: border 0.2s, background 0.2s;
+  }
+  input::placeholder { color: rgba(255,255,255,0.3); }
+  input:focus {
+    border-color: #a18cd1;
+    background: rgba(255,255,255,0.1);
+  }
+
+  button {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    color: #1a1a2e;
+    background: linear-gradient(90deg, #a18cd1, #fbc2eb);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(161, 140, 209, 0.4);
+  }
+  button:active { transform: translateY(0); }
+
+  #gaugeWrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.8rem;
+    position: relative;
+  }
+
+  svg { transform: rotate(-90deg); }
+
+  .track {
+    fill: none;
+    stroke: rgba(255,255,255,0.08);
+    stroke-width: 12;
+  }
+
+  .progress {
+    fill: none;
+    stroke-width: 12;
+    stroke-linecap: round;
+    stroke-dasharray: 377;
+    stroke-dashoffset: 377;
+    transition: stroke-dashoffset 1s ease, stroke 0.5s ease;
+  }
+
+  #gaugeCenter {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  #bmiNum {
+    display: block;
+    font-size: 2.1rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  #bmiCat {
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.8;
+  }
+
+  #hint {
+    text-align: center;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.35);
+    margin-top: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<div id="card">
+  <h1>✦ BMI CALCULATOR ✦</h1>
+
+  <div class="field">
+    <label for="weight">Weight (kg)</label>
+    <input type="number" id="weight" placeholder="e.g. 60">
+  </div>
+
+  <div class="field">
+    <label for="height">Height (cm)</label>
+    <input type="number" id="height" placeholder="e.g. 165">
+  </div>
+
+  <button id="calcBtn">Calculate</button>
+
+  <div id="gaugeWrap">
+    <svg width="140" height="140" viewBox="0 0 140 140">
+      <circle class="track" cx="70" cy="70" r="60"></circle>
+      <circle class="progress" id="progressCircle" cx="70" cy="70" r="60" stroke="#a18cd1"></circle>
+    </svg>
+    <div id="gaugeCenter">
+      <span id="bmiNum">--</span>
+      <span id="bmiCat">Enter data</span>
+    </div>
+  </div>
+
+  <div id="hint">Circumference maps 15–40 BMI range</div>
+</div>
+
+<script>
+  const weightInput = document.getElementById('weight');
+  const heightInput = document.getElementById('height');
+  const calcBtn = document.getElementById('calcBtn');
+  const progressCircle = document.getElementById('progressCircle');
+  const bmiNum = document.getElementById('bmiNum');
+  const bmiCat = document.getElementById('bmiCat');
+
+  const CIRCUMFERENCE = 2 * Math.PI * 60; // ≈377
+
+  function calculateBMI() {
+    const weight = parseFloat(weightInput.value);
+    const heightCm = parseFloat(heightInput.value);
+
+    if (!weight || !heightCm || weight <= 0 || heightCm <= 0) {
+      bmiNum.textContent = '--';
+      bmiCat.textContent = 'Invalid input';
+      progressCircle.style.strokeDashoffset = CIRCUMFERENCE;
+      return;
+    }
+
+    const heightM = heightCm / 100;
+    const bmi = weight / (heightM * heightM);
+    const bmiRounded = bmi.toFixed(1);
+
+    let category, color;
+    if (bmi < 18.5) { category = 'Underweight'; color = '#3ea6ff'; }
+    else if (bmi < 25) { category = 'Normal'; color = '#4ade80'; }
+    else if (bmi < 30) { category = 'Overweight'; color = '#fbbf24'; }
+    else { category = 'Obese'; color = '#f87171'; }
+
+    // map BMI 15–40 onto the gauge (clamped)
+    const clamped = Math.min(Math.max(bmi, 15), 40);
+    const percent = (clamped - 15) / (40 - 15);
+    const offset = CIRCUMFERENCE * (1 - percent);
+
+    progressCircle.style.stroke = color;
+    progressCircle.style.strokeDashoffset = offset;
+    bmiNum.textContent = bmiRounded;
+    bmiNum.style.color = color;
+    bmiCat.textContent = category;
+  }
+
+  calcBtn.addEventListener('click', calculateBMI);
+  [weightInput, heightInput].forEach(input => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') calculateBMI();
+    });
+  });
+</script>
+
+</body>
+</html>
